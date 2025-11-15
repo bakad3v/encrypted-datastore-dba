@@ -64,6 +64,7 @@ public fun encryptedPreferencesDataStore(
     masterKey: String = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC),
     fileEncryptionScheme: FileEncryptionScheme = FileEncryptionScheme.AES256_GCM_HKDF_4KB,
     encryptionOptions: EncryptedDataStoreOptions.() -> Unit = {},
+    deviceProtected: Boolean = false
 ): ReadOnlyProperty<Context, DataStore<Preferences>> {
     return EncryptedPreferenceDataStoreSingletonDelegate(
         name = name,
@@ -73,6 +74,7 @@ public fun encryptedPreferencesDataStore(
         masterKey = masterKey,
         fileEncryptionScheme = fileEncryptionScheme,
         encryptionOptions = encryptionOptions,
+        deviceProtected = deviceProtected
     )
 }
 
@@ -87,7 +89,8 @@ internal class EncryptedPreferenceDataStoreSingletonDelegate internal constructo
     private val scope: CoroutineScope,
     private val masterKey: String,
     private val fileEncryptionScheme: FileEncryptionScheme,
-    private val encryptionOptions: EncryptedDataStoreOptions.() -> Unit
+    private val encryptionOptions: EncryptedDataStoreOptions.() -> Unit,
+    private val deviceProtected: Boolean
 ) : ReadOnlyProperty<Context, DataStore<Preferences>> {
 
     private val lock = Any()
@@ -105,7 +108,11 @@ internal class EncryptedPreferenceDataStoreSingletonDelegate internal constructo
     override fun getValue(thisRef: Context, property: KProperty<*>): DataStore<Preferences> {
         return INSTANCE ?: synchronized(lock) {
             if (INSTANCE == null) {
-                val applicationContext = thisRef.applicationContext
+                val applicationContext = if (deviceProtected) {
+                    thisRef.applicationContext.createDeviceProtectedStorageContext()
+                } else {
+                    thisRef.applicationContext
+                }
 
                 INSTANCE = PreferenceDataStoreFactory.createEncrypted(
                     corruptionHandler = corruptionHandler,
