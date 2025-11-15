@@ -69,6 +69,7 @@ public fun <T> encryptedDataStore(
     masterKey: String = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC),
     fileEncryptionScheme: FileEncryptionScheme = FileEncryptionScheme.AES256_GCM_HKDF_4KB,
     encryptionOptions: EncryptedDataStoreOptions.() -> Unit = {},
+    deviceProtected: Boolean = false
 ): ReadOnlyProperty<Context, DataStore<T>> {
     return EncryptedDataStoreSingletonDelegate(
         fileName = fileName,
@@ -79,6 +80,7 @@ public fun <T> encryptedDataStore(
         masterKey = masterKey,
         fileEncryptionScheme = fileEncryptionScheme,
         encryptionOptions = encryptionOptions,
+        deviceProtected = deviceProtected
     )
 }
 
@@ -94,7 +96,8 @@ internal class EncryptedDataStoreSingletonDelegate<T> internal constructor(
     private val scope: CoroutineScope,
     private val masterKey: String,
     private val fileEncryptionScheme: FileEncryptionScheme,
-    private val encryptionOptions: EncryptedDataStoreOptions.() -> Unit
+    private val encryptionOptions: EncryptedDataStoreOptions.() -> Unit,
+    private val deviceProtected: Boolean
 ) : ReadOnlyProperty<Context, DataStore<T>> {
 
     private val lock = Any()
@@ -112,7 +115,11 @@ internal class EncryptedDataStoreSingletonDelegate<T> internal constructor(
     override fun getValue(thisRef: Context, property: KProperty<*>): DataStore<T> {
         return INSTANCE ?: synchronized(lock) {
             if (INSTANCE == null) {
-                val applicationContext = thisRef.applicationContext
+                val applicationContext = if (deviceProtected) {
+                    thisRef.applicationContext.createDeviceProtectedStorageContext()
+                } else {
+                    thisRef.applicationContext
+                }
                 INSTANCE = DataStoreFactory.createEncrypted(
                     corruptionHandler = corruptionHandler,
                     serializer = serializer,
