@@ -13,8 +13,6 @@ signing {
 
 mavenPublishing {
     publishToMavenCentral(SonatypeHost.S01)
-    signAllPublications()
-
     coordinates(artifactId = project.name)
 
     pom {
