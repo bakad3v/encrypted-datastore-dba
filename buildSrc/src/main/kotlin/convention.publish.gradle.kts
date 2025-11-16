@@ -21,12 +21,13 @@ mavenPublishing {
         name = project.name
         description = project.description
 
-        setGitHubProject("osipxd/encrypted-datastore")
+        setGitHubProject("bakad3v/encrypted-datastore-dba")
         licenses {
             mit()
         }
         developers {
             developer(id = "osipxd", name = "Osip Fatkullin", email = "osip.fatkullin@gmail.com")
+            developer(id = "bakad3v", name = "bakad3v", email = "162032863+bakad3v@users.noreply.github.com")
         }
     }
 }
